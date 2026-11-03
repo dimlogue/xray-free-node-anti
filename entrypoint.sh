@@ -5,9 +5,10 @@ set -eu
 : "${UUID:?need UUID env}"
 WS_PATH="${WS_PATH:-/tk-xray}"
 PORT="${PORT:-8080}"
-mkdir -p /etc/xray
+mkdir -p /etc/xray /var/log/xray
 cat > /etc/xray/config.json <<EOF
 {
+  "log": { "loglevel": "info", "access": "/var/log/xray/access.log" },
   "inbounds": [
     {
       "port": ${PORT},
@@ -25,4 +26,7 @@ cat > /etc/xray/config.json <<EOF
   "outbounds": [{ "protocol": "freedom", "tag": "direct" }]
 }
 EOF
+# ship xray access log to container stdout so it shows in platform logs
+touch /var/log/xray/access.log
+tail -n 0 -f /var/log/xray/access.log &
 exec /usr/local/bin/xray run -config /etc/xray/config.json
